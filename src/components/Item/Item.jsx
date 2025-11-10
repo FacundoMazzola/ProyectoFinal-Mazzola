@@ -1,19 +1,38 @@
 // src/containers/ItemListContainer/Item.jsx
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom'; // 👈 Agrega useNavigate
+// ❗️ IMPORTANTE: Reemplaza './CartContext' con la ruta real a tu archivo de contexto
+import { useCartContext } from '../../context/CartContext';
 
 const Item = ({ product }) => {
+    // Inicializa los hooks:
+    const navigate = useNavigate();
+    const { addItem } = useCartContext(); // Asume que tienes un hook para tu contexto
+
+    // FUNCIÓN QUE MANEJA LA COMPRA Y REDIRECCIÓN
+    const handleAddToCart = () => {
+        // 1. AGREGA el producto al carrito (cantidad por defecto 1)
+        addItem(product, 1);
+
+        // 2. REDIRIGE al usuario a la vista del carrito
+        navigate('/cart');
+    };
+
     return (
         <div style={styles.card}>
-            <img src={product.image} alt={product.title} style={styles.image} />
-            <h3 style={styles.title}>{product.title}</h3>
-            <p style={styles.price}>${product.price.toLocaleString()}</p>
+            {/* ... (código anterior) ... */}
             <p style={styles.description}>{product.description}</p>
 
             <div style={styles.buttons}>
                 <Link to={`/item/${product.id}`} style={styles.detailButton}>
                     Ver Detalle
                 </Link>
-                <button style={styles.buyButton}>🛒 Agregar al carrito</button>
+                {/* 3. ASIGNA la función handleAddToCart al botón */}
+                <button
+                    style={styles.buyButton}
+                    onClick={handleAddToCart} // 👈 ¡CLAVE!
+                >
+                    🛒 Comprar (ir al carrito)
+                </button>
             </div>
         </div>
     );
