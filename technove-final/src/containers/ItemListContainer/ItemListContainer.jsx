@@ -1,7 +1,7 @@
 // src/containers/ItemListContainer/ItemListContainer.jsx
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import ItemList from './ItemList';
+import ItemList from './ItemList.jsx';
 import { products as localProducts } from '../../data/products';
 
 const ItemListContainer = ({ greeting }) => {

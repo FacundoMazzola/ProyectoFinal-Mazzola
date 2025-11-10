@@ -1,8 +1,7 @@
 // src/containers/ItemListContainer/ItemList.jsx
-import Item from "../../components/Item";
-
-
+import Item from "../../components/Item/item.jsx";
 const ItemList = ({ products }) => {
+
     return (
         <div style={styles.grid}>
             {products.map(prod => (
