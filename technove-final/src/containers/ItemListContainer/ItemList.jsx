@@ -1,5 +1,6 @@
 // src/containers/ItemListContainer/ItemList.jsx
-import Item from './Item';
+import Item from "../../components/Item";
+
 
 const ItemList = ({ products }) => {
     return (
