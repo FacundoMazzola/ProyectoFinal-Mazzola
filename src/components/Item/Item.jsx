@@ -3,97 +3,168 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 
 const Item = ({ product }) => {
-    // Inicializa los hooks:
     const navigate = useNavigate();
     const { addToCart } = useCart();
 
-    // FUNCIÓN QUE MANEJA LA COMPRA Y REDIRECCIÓN
+    // Agrega cantidad por defecto
     const handleAddToCart = () => {
-        // 1. AGREGA el producto al carrito. La función de tu contexto solo pide 1 argumento (item)
-        addToCart(product); // ⚠️ Solo pasamos 'product'
-
-        // 2. REDIRIGE al usuario a la vista del carrito
+        const itemWithQuantity = { ...product, quantity: 1 };
+        addToCart(itemWithQuantity);
         navigate('/cart');
     };
 
-    // ...
-    // El resto del componente está correcto, incluyendo onClick={handleAddToCart}
+    return (
+        <div style={styles.card}>
+            <div style={styles.imageContainer}>
+                <img
+                    src={product.image || 'https://via.placeholder.com/250'}
+                    alt={product.name}
+                    style={styles.image}
+                />
+            </div>
 
-return (
-    <div style={styles.card}>
-        {/* ... (código anterior) ... */}
-        <p style={styles.description}>{product.description}</p>
+            <div style={styles.info}>
+                <h3 style={styles.title}>{product.name}</h3>
+                <p style={styles.description}>
+                    {product.description?.length > 80
+                        ? product.description.slice(0, 80) + '...'
+                        : product.description}
+                </p>
 
-        <div style={styles.buttons}>
-            <Link to={`/item/${product.id}`} style={styles.detailButton}>
-                Ver Detalle
-            </Link>
-            {/* 3. ASIGNA la función handleAddToCart al botón */}
-            <button
-                style={styles.buyButton}
-                onClick={handleAddToCart} // 👈 ¡CLAVE!
-            >
-                🛒 Comprar (ir al carrito)
-            </button>
+                <div style={styles.priceSection}>
+                    <span style={styles.price}>
+                        {product.price?.toLocaleString('es-AR', {
+                            style: 'currency',
+                            currency: 'ARS',
+                        }) || '$0'}
+                    </span>
+                    {product.discount && (
+                        <span style={styles.discount}>-{product.discount}%</span>
+                    )}
+                </div>
+            </div>
+
+            <div style={styles.actions}>
+                <Link to={`/item/${product.id}`} style={styles.detailButton}>
+                    Ver detalle
+                </Link>
+                <button onClick={handleAddToCart} style={styles.addButton}>
+                    🛒 Agregar
+                </button>
+            </div>
         </div>
-    </div>
-);
+    );
 };
 
 const styles = {
     card: {
-        border: '1px solid #ddd',
-        borderRadius: '12px',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        borderRadius: '16px',
+        backgroundColor: '#fff',
+        boxShadow: '0 4px 15px rgba(0, 0, 0, 0.08)',
         padding: '20px',
         width: '280px',
+        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+        cursor: 'pointer',
         margin: '15px',
-        textAlign: 'center',
-        boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
-        transition: 'transform 0.2s',
+    },
+    imageContainer: {
+        width: '100%',
+        height: '200px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: '10px',
     },
     image: {
         width: '100%',
-        height: '200px',
+        height: '100%',
         objectFit: 'contain',
-        marginBottom: '10px',
+        borderRadius: '10px',
+    },
+    info: {
+        textAlign: 'left',
+        marginBottom: '15px',
     },
     title: {
-        fontSize: '1.2rem',
-        fontWeight: 'bold',
-        margin: '10px 0',
-    },
-    price: {
-        fontSize: '1.4rem',
-        color: '#007600',
-        marginBottom: '10px',
+        fontSize: '1.1rem',
+        fontWeight: '600',
+        color: '#222',
+        marginBottom: '6px',
     },
     description: {
         fontSize: '0.9rem',
-        color: '#555',
-        marginBottom: '15px',
+        color: '#666',
+        lineHeight: '1.3em',
+        marginBottom: '10px',
     },
-    buttons: {
+    priceSection: {
         display: 'flex',
-        justifyContent: 'space-around',
+        alignItems: 'center',
+        gap: '8px',
+    },
+    price: {
+        fontSize: '1.4rem',
+        fontWeight: 'bold',
+        color: '#007600',
+    },
+    discount: {
+        backgroundColor: '#e53935',
+        color: 'white',
+        padding: '3px 8px',
+        borderRadius: '5px',
+        fontSize: '0.8rem',
+    },
+    actions: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: '15px',
     },
     detailButton: {
-        backgroundColor: '#0077ff',
+        flex: 1,
+        backgroundColor: '#1976d2',
         color: 'white',
-        border: 'none',
-        padding: '8px 12px',
-        borderRadius: '6px',
         textDecoration: 'none',
-        fontSize: '0.9rem',
+        padding: '10px 0',
+        borderRadius: '8px',
+        fontSize: '0.95rem',
+        textAlign: 'center',
+        marginRight: '10px',
+        transition: 'background-color 0.2s ease',
     },
-    buyButton: {
-        backgroundColor: '#00c853',
+    addButton: {
+        flex: 1,
+        backgroundColor: '#2e7d32',
         color: 'white',
         border: 'none',
-        padding: '8px 12px',
-        borderRadius: '6px',
+        borderRadius: '8px',
+        fontSize: '0.95rem',
+        padding: '10px 0',
         cursor: 'pointer',
-        fontSize: '0.9rem',
+        transition: 'background-color 0.2s ease',
     },
 };
+
+// Efectos hover (agregá este bloque al final del archivo si usás CSS global)
+const hoverStyle = `
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+button:hover, a:hover {
+    filter: brightness(1.1);
+}
+`;
+
+// Injectamos el estilo hover al documento
+if (typeof document !== 'undefined' && !document.getElementById('item-hover-style')) {
+    const styleTag = document.createElement('style');
+    styleTag.id = 'item-hover-style';
+    styleTag.innerHTML = hoverStyle;
+    document.head.appendChild(styleTag);
+}
 
 export default Item;
