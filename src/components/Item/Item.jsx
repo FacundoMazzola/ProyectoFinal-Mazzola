@@ -1,7 +1,7 @@
 // src/containers/ItemListContainer/Item.jsx
 import { Link, useNavigate } from 'react-router-dom'; // 👈 Agrega useNavigate
 // ❗️ IMPORTANTE: Reemplaza './CartContext' con la ruta real a tu archivo de contexto
-import { useCartContext } from '../../context/CartContext';
+import { useCartContext } from '../../context/CartContext'; 
 
 const Item = ({ product }) => {
     // Inicializa los hooks:
@@ -11,10 +11,10 @@ const Item = ({ product }) => {
     // FUNCIÓN QUE MANEJA LA COMPRA Y REDIRECCIÓN
     const handleAddToCart = () => {
         // 1. AGREGA el producto al carrito (cantidad por defecto 1)
-        addItem(product, 1);
+        addItem(product, 1); 
 
         // 2. REDIRIGE al usuario a la vista del carrito
-        navigate('/cart');
+        navigate('/cart'); 
     };
 
     return (
@@ -27,8 +27,8 @@ const Item = ({ product }) => {
                     Ver Detalle
                 </Link>
                 {/* 3. ASIGNA la función handleAddToCart al botón */}
-                <button
-                    style={styles.buyButton}
+                <button 
+                    style={styles.buyButton} 
                     onClick={handleAddToCart} // 👈 ¡CLAVE!
                 >
                     🛒 Comprar (ir al carrito)
