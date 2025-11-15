@@ -7,13 +7,13 @@ const firebaseConfig = {
     apiKey: "AIzaSyDHMg-OIYo7uuK1wVW3g95nzvSMTMcJsf0",
     authDomain: "technove-490ad.firebaseapp.com",
     projectId: "technove-490ad",
-    storageBucket: "technove-490ad.appspot.com", // ✅ corregido
+    storageBucket: "technove-490ad.appspot.com",
     messagingSenderId: "5962388573",
     appId: "1:5962388573:web:0cfe68bc7e0a6c810469b4"
 };
 // ---------------------------------------------
 
-// Inicializa Firebase App
+// Inicializa Firebase
 const app = initializeApp(firebaseConfig);
 
 // Inicializa Firestore Database

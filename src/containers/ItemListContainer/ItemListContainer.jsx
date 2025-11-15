@@ -14,7 +14,7 @@ const ItemListContainer = ({ greeting }) => {
         setLoading(true);
         setError(null);
 
-        // Simula carga asincrónica (por estética)
+        // Simula carga asincrónica
         setTimeout(() => {
             if (categoryId) {
                 const filtered = localProducts.filter(p => p.category === categoryId);

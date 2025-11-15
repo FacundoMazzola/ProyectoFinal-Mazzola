@@ -2,7 +2,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
-// Importamos el Proveedor del Contexto
 import { CartProvider } from "./context/CartContext";
 
 ReactDOM.createRoot(document.getElementById('root')).render(

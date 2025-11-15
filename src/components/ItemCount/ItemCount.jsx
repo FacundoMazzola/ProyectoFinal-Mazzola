@@ -1,109 +1,184 @@
-// src/components/ItemCount/ItemCount.jsx
-import { useState } from 'react';
+// src/containers/ItemDetailContainer/ItemDetailContainer.jsx
+import { useState, useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../api/firebaseConfig';
+import { useCart } from '../../context/CartContext';
+import ItemCount from '../../components/ItemCount/ItemCount';
 
-// maxStock: Cantidad máxima disponible (stock)
-// onAdd: Función que se ejecuta al presionar "Agregar al Carrito"
-const ItemCount = ({ maxStock, onAdd }) => {
-    // 1. Estado local para el contador (inicia en 1)
-    const [count, setCount] = useState(1);
+const ItemDetailContainer = () => {
+    const [product, setProduct] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [quantityAdded, setQuantityAdded] = useState(0);
 
-    // Función para decrementar el contador (mínimo 1)
-    const decrement = () => {
-        if (count > 1) {
-            setCount(count - 1);
-        }
+    const { itemId } = useParams();
+    const { addToCart } = useCart();
+
+    useEffect(() => {
+        setLoading(true);
+        setProduct(null);
+        setError(null);
+        setQuantityAdded(0);
+
+        const docRef = doc(db, 'products', itemId);
+
+        getDoc(docRef)
+            .then(docSnapshot => {
+                if (docSnapshot.exists()) {
+                    setProduct({ id: docSnapshot.id, ...docSnapshot.data() });
+                } else {
+                    setError("Producto no encontrado.");
+                }
+            })
+            .catch(() => setError("Error al cargar el producto."))
+            .finally(() => setLoading(false));
+    }, [itemId]);
+
+    const handleOnAdd = (quantity) => {
+        if (!product) return;
+
+        addToCart({
+            id: product.id,
+            name: product.name,
+            price: Number(product.price),
+            img: product.img || product.image || "",
+            description: product.description || "",
+            stock: Number(product.stock) || 0,
+            quantity
+        });
+
+        setQuantityAdded(quantity);
     };
 
-    // Función para incrementar el contador (máximo stock)
-    const increment = () => {
-        if (count < maxStock) {
-            setCount(count + 1);
-        }
-    };
+    if (loading) return <p style={styles.status}>Cargando...</p>;
+    if (error) return <p style={{ ...styles.status, color: "red" }}>{error}</p>;
+    if (!product) return null;
 
     return (
         <div style={styles.container}>
-            <div style={styles.controls}>
-                <button
-                    onClick={decrement}
-                    disabled={count === 1}
-                    style={styles.button}
-                >
-                    -
-                </button>
-                <span style={styles.countDisplay}>{count}</span>
-                <button
-                    onClick={increment}
-                    disabled={count === maxStock}
-                    style={styles.button}
-                >
-                    +
-                </button>
+            <div style={styles.card}>
+                <img
+                    src={product.img || product.image}
+                    alt={product.name}
+                    style={styles.image}
+                    onError={(e) => { e.target.src = 'https://placehold.co/400x300?text=Sin+Imagen'; }}
+                />
+
+                <div style={styles.info}>
+                    <h1 style={styles.title}>{product.name}</h1>
+
+                    <p style={styles.price}>
+                        {Number(product.price).toLocaleString('es-AR', {
+                            style: 'currency',
+                            currency: 'ARS'
+                        })}
+                    </p>
+
+                    <p style={styles.description}>{product.description}</p>
+
+                    <p style={styles.category}>
+                        Categoría: {product.category || 'Sin categoría'}
+                    </p>
+
+                    <ItemCount
+                        maxStock={product.stock}
+                        onAdd={handleOnAdd}
+                    />
+
+                    {quantityAdded > 0 && (
+                        <div style={styles.feedback}>
+                            <span style={styles.notice}>
+                                ✔ Agregaste {quantityAdded}
+                            </span>
+
+                            <Link to="/cart" style={styles.cartButton}>
+                                Ir al carrito
+                            </Link>
+                        </div>
+                    )}
+                </div>
             </div>
-
-            <p style={styles.stockInfo}>Stock disponible: {maxStock}</p>
-
-            <button
-                onClick={() => onAdd(count)}
-                disabled={maxStock === 0} // No se puede agregar si no hay stock
-                style={{ ...styles.addButton, opacity: maxStock === 0 ? 0.6 : 1 }}
-            >
-                Agregar al Carrito
-            </button>
         </div>
     );
 };
 
 const styles = {
+    status: {
+        textAlign: "center",
+        fontSize: "1.3rem",
+        marginTop: "50px"
+    },
     container: {
-        textAlign: 'center',
-        padding: '20px',
-        border: '1px solid #ccc',
-        borderRadius: '8px',
-        maxWidth: '300px',
-        margin: '20px auto',
-        backgroundColor: '#f9f9f9'
+        display: "flex",
+        justifyContent: "center",
+        padding: "40px",
+        backgroundColor: "#f9f9f9"
     },
-    controls: {
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginBottom: '15px'
+    card: {
+        display: "flex",
+        gap: "30px",
+        backgroundColor: "white",
+        borderRadius: "15px",
+        padding: "30px",
+        maxWidth: "1000px",
+        width: "100%",
+        boxShadow: "0 8px 20px rgba(0,0,0,0.1)"
     },
-    button: {
-        backgroundColor: '#61dafb', // Color React
-        color: '#282c34',
-        border: 'none',
-        borderRadius: '50%',
-        width: '40px',
-        height: '40px',
-        fontSize: '1.5em',
-        cursor: 'pointer',
-        transition: 'background-color 0.2s',
-        margin: '0 10px'
+    image: {
+        width: "40%",
+        minWidth: "330px",
+        borderRadius: "10px",
+        objectFit: "cover"
     },
-    countDisplay: {
-        fontSize: '1.5em',
-        fontWeight: 'bold',
-        minWidth: '30px'
+    info: {
+        width: "60%",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "flex-start"
     },
-    stockInfo: {
-        fontSize: '0.9em',
-        color: '#777',
-        marginBottom: '15px'
+    title: {
+        fontSize: "2.8rem",
+        marginBottom: "10px",
+        color: "#222"
     },
-    addButton: {
-        backgroundColor: '#4CAF50', // Verde de acción
-        color: 'white',
-        border: 'none',
-        padding: '10px 20px',
-        borderRadius: '5px',
-        cursor: 'pointer',
-        fontWeight: 'bold',
-        fontSize: '1em',
-        width: '100%',
-        transition: 'background-color 0.2s'
+    price: {
+        fontSize: "2rem",
+        fontWeight: "700",
+        color: "#4CAF50",
+        marginBottom: "20px"
+    },
+    description: {
+        fontSize: "1.1rem",
+        color: "#444",
+        marginBottom: "20px"
+    },
+    category: {
+        fontSize: "1rem",
+        color: "#777",
+        marginBottom: "25px"
+    },
+    feedback: {
+        marginTop: "20px",
+        display: "flex",
+        gap: "12px",
+        alignItems: "center"
+    },
+    notice: {
+        background: "#e8f5e9",
+        color: "#2e7d32",
+        padding: "10px 15px",
+        borderRadius: "8px",
+        fontWeight: "600"
+    },
+    cartButton: {
+        backgroundColor: "#f57c00",
+        color: "white",
+        padding: "10px 15px",
+        borderRadius: "8px",
+        fontWeight: "600",
+        textDecoration: "none"
     }
 };
 
-export default ItemCount;
+export default ItemDetailContainer;

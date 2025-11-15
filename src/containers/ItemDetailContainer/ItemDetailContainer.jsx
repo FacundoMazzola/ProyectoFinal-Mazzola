@@ -10,10 +10,10 @@ const ItemDetailContainer = () => {
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [quantityAdded, setQuantityAdded] = useState(0); // Estado para controlar si ya se agregó al carrito
+    const [quantityAdded, setQuantityAdded] = useState(0); // cantidad añadida (solo para mostrar confirmación)
 
     const { itemId } = useParams();
-    const { addItem } = useCart(); // Función para agregar al carrito del CartContext
+    const { addToCart } = useCart(); // <- usar addToCart (coincide con CartContext)
 
     useEffect(() => {
         setLoading(true);
@@ -21,14 +21,11 @@ const ItemDetailContainer = () => {
         setError(null);
         setQuantityAdded(0);
 
-        // 1. Referencia al documento específico
         const docRef = doc(db, 'products', itemId);
 
-        // 2. Obtener el documento de Firebase
         getDoc(docRef)
             .then(docSnapshot => {
                 if (docSnapshot.exists()) {
-                    // Si existe, mapear los datos junto con el id
                     setProduct({ id: docSnapshot.id, ...docSnapshot.data() });
                 } else {
                     setError("Producto no encontrado. El ID es inválido.");
@@ -44,11 +41,23 @@ const ItemDetailContainer = () => {
 
     }, [itemId]);
 
-    // 💡 FUNCIÓN CLAVE: Se ejecuta cuando el ItemCount presiona "Agregar"
+    // Cuando ItemCount llama onAdd
     const handleOnAdd = (quantity) => {
         if (product && quantity > 0) {
-            addItem(product, quantity);
-            setQuantityAdded(quantity); // Actualiza el estado para mostrar el botón de ir al carrito
+            // Enviamos al contexto un objeto con quantity incluido
+            addToCart({
+                id: product.id,
+                name: product.name || product.title || 'Producto',
+                price: Number(product.price) || 0,
+                img: product.img || product.image || '',
+                description: product.description || '',
+                category: product.category || '',
+                stock: product.stock || product.available || 0,
+                quantity: quantity
+            });
+
+            // Guardamos cantidad añadida para mostrar confirmación, pero NO redirigimos automáticamente
+            setQuantityAdded(quantity);
         }
     };
 
@@ -56,35 +65,44 @@ const ItemDetailContainer = () => {
     if (error) return <p style={{...styles.statusMessage, color: 'red'}}>⚠️ {error}</p>;
     if (!product) return null;
 
-    // Estructura de presentación del detalle
     return (
         <div style={styles.container}>
             <div style={styles.detailCard}>
                 <img 
-                    src={product.img} 
-                    alt={product.name} 
+                    src={product.img || product.image} 
+                    alt={product.name || product.title} 
                     style={styles.image} 
                     onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/400x300/282c34/61dafb?text=Imagen+No+Disp.'; }}
                 />
                 <div style={styles.info}>
-                    <h1 style={styles.title}>{product.name}</h1>
+                    <h1 style={styles.title}>{product.name || product.title}</h1>
                     <p style={styles.price}>
-                        Precio: ${product.price.toLocaleString('es-AR')}
+                        Precio: ${Number(product.price || 0).toLocaleString('es-AR')}
                     </p>
                     <p style={styles.description}>{product.description}</p>
                     <p style={styles.category}>
-                        Categoría: {product.category.charAt(0).toUpperCase() + product.category.slice(1)}
+                        Categoría: {product.category ? product.category.charAt(0).toUpperCase() + product.category.slice(1) : '—'}
                     </p>
 
-                    {/* Lógica condicional: si ya se agregó, muestra el botón de ir al carrito */}
+                    {/* Si ya agregaste algo mostramos confirmación con opciones, pero no redirigimos automáticamente */}
                     {quantityAdded > 0 ? (
-                        <Link to="/cart" style={styles.goToCartButton}>
-                            Ir al Carrito ({quantityAdded} ítems)
-                        </Link>
+                        <div style={{ display: 'flex', gap: '12px', marginTop: '18px', alignItems: 'center' }}>
+                            <div style={styles.addedBadge}>✔ Agregaste {quantityAdded}</div>
+
+                            <Link to="/cart" style={styles.goToCartButton}>
+                                Ir al Carrito
+                            </Link>
+
+                            <button
+                                style={styles.continueButton}
+                                onClick={() => setQuantityAdded(0)}
+                            >
+                                Seguir comprando
+                            </button>
+                        </div>
                     ) : (
-                        // Si aún no se agregó, muestra el contador para elegir cantidad
                         <ItemCount 
-                            maxStock={product.stock} 
+                            maxStock={product.stock || product.available || 99} 
                             onAdd={handleOnAdd} 
                         />
                     )}
@@ -155,16 +173,29 @@ const styles = {
         marginBottom: '30px'
     },
     goToCartButton: {
-        backgroundColor: '#f57c00', // Naranja del carrito
+        backgroundColor: '#f57c00',
         color: 'white',
         textDecoration: 'none',
-        padding: '15px 30px',
+        padding: '10px 18px',
         borderRadius: '8px',
-        textAlign: 'center',
-        fontSize: '1.2em',
-        fontWeight: 'bold',
-        marginTop: 'auto',
-        transition: 'background-color 0.3s'
+        fontSize: '1rem',
+        fontWeight: '700'
+    },
+    continueButton: {
+        background: 'transparent',
+        border: '2px solid #f57c00',
+        color: '#f57c00',
+        padding: '8px 14px',
+        borderRadius: '8px',
+        cursor: 'pointer',
+        fontWeight: '700'
+    },
+    addedBadge: {
+        background: '#e8f5e9',
+        color: '#2e7d32',
+        padding: '8px 12px',
+        borderRadius: '8px',
+        fontWeight: '700'
     }
 };
 

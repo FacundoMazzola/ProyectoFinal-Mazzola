@@ -1,16 +1,13 @@
 // src/containers/ItemListContainer/Item.jsx
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 
 const Item = ({ product }) => {
-    const navigate = useNavigate();
     const { addToCart } = useCart();
 
-    // Agrega cantidad por defecto
     const handleAddToCart = () => {
         const itemWithQuantity = { ...product, quantity: 1 };
         addToCart(itemWithQuantity);
-        navigate('/cart');
     };
 
     return (
@@ -148,7 +145,6 @@ const styles = {
     },
 };
 
-// Efectos hover (agregá este bloque al final del archivo si usás CSS global)
 const hoverStyle = `
 .card:hover {
     transform: translateY(-5px);
@@ -159,7 +155,6 @@ button:hover, a:hover {
 }
 `;
 
-// Injectamos el estilo hover al documento
 if (typeof document !== 'undefined' && !document.getElementById('item-hover-style')) {
     const styleTag = document.createElement('style');
     styleTag.id = 'item-hover-style';
