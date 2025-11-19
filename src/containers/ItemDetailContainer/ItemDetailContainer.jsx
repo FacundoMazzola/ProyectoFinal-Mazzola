@@ -10,87 +10,109 @@ const ItemDetailContainer = () => {
     const [product, setProduct] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [quantityAdded, setQuantityAdded] = useState(0); // cantidad añadida (solo para mostrar confirmación)
+    const [quantityAdded, setQuantityAdded] = useState(0);
 
     const { itemId } = useParams();
-    const { addToCart } = useCart(); // <- usar addToCart (coincide con CartContext)
+    const { addToCart } = useCart();
 
     useEffect(() => {
-        setLoading(true);
-        setProduct(null);
-        setError(null);
-        setQuantityAdded(0);
+        const fetchProduct = async () => {
+            setLoading(true);
+            setError(null);
+            setProduct(null);
+            setQuantityAdded(0);
 
-        const docRef = doc(db, 'products', itemId);
+            try {
+                const ref = doc(db, "products", itemId);
+                const snap = await getDoc(ref);
 
-        getDoc(docRef)
-            .then(docSnapshot => {
-                if (docSnapshot.exists()) {
-                    setProduct({ id: docSnapshot.id, ...docSnapshot.data() });
-                } else {
-                    setError("Producto no encontrado. El ID es inválido.");
+                if (!snap.exists()) {
+                    setError("Producto no encontrado. Verificá el ID.");
+                    return;
                 }
-            })
-            .catch(err => {
-                console.error("Error al obtener detalle:", err);
-                setError("Hubo un error al cargar los detalles del producto.");
-            })
-            .finally(() => {
-                setLoading(false);
-            });
 
+                setProduct({ id: snap.id, ...snap.data() });
+
+            } catch (err) {
+                console.error(err);
+                setError("Hubo un error al cargar este producto.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProduct();
     }, [itemId]);
 
-    // Cuando ItemCount llama onAdd
     const handleOnAdd = (quantity) => {
-        if (product && quantity > 0) {
-            // Enviamos al contexto un objeto con quantity incluido
-            addToCart({
-                id: product.id,
-                name: product.name || product.title || 'Producto',
-                price: Number(product.price) || 0,
-                img: product.img || product.image || '',
-                description: product.description || '',
-                category: product.category || '',
-                stock: product.stock || product.available || 0,
-                quantity: quantity
-            });
+        if (!product) return;
 
-            // Guardamos cantidad añadida para mostrar confirmación, pero NO redirigimos automáticamente
-            setQuantityAdded(quantity);
-        }
+        addToCart({
+            id: product.id,
+            name: product.name ?? "Producto sin nombre",
+            price: Number(product.price ?? 0),
+
+
+            image: product.image ?? product.img ?? "",
+
+            description: product.description ?? "",
+            category: product.category ?? "",
+            stock: Number(product.stock ?? 10),
+            quantity
+        });
+
+        setQuantityAdded(quantity);
     };
 
-    if (loading) return <p style={styles.statusMessage}>Cargando detalles del producto... 🔍</p>;
-    if (error) return <p style={{...styles.statusMessage, color: 'red'}}>⚠️ {error}</p>;
+    if (loading)
+        return <p style={styles.statusMessage}>Cargando producto... 🔄</p>;
+
+    if (error)
+        return (
+            <div style={styles.errorBox}>
+                <p style={styles.errorText}>⚠️ {error}</p>
+                <Link to="/" style={styles.backButton}>Volver al inicio</Link>
+            </div>
+        );
+
     if (!product) return null;
 
     return (
         <div style={styles.container}>
             <div style={styles.detailCard}>
-                <img 
-                    src={product.img || product.image} 
-                    alt={product.name || product.title} 
-                    style={styles.image} 
-                    onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/400x300/282c34/61dafb?text=Imagen+No+Disp.'; }}
+                <img
+                    src={product.image ?? product.img ?? 'https://placehold.co/450x350?text=Sin+Imagen'}
+                    alt={product.name}
+                    style={styles.image}
+                    onError={(e) => {
+                        e.target.src = 'https://placehold.co/450x350/282c34/fff?text=Imagen+No+Disponible';
+                    }}
                 />
+
                 <div style={styles.info}>
-                    <h1 style={styles.title}>{product.name || product.title}</h1>
+                    <h1 style={styles.title}>{product.name}</h1>
+
                     <p style={styles.price}>
-                        Precio: ${Number(product.price || 0).toLocaleString('es-AR')}
-                    </p>
-                    <p style={styles.description}>{product.description}</p>
-                    <p style={styles.category}>
-                        Categoría: {product.category ? product.category.charAt(0).toUpperCase() + product.category.slice(1) : '—'}
+                        {Number(product.price).toLocaleString("es-AR", {
+                            style: "currency",
+                            currency: "ARS"
+                        })}
                     </p>
 
-                    {/* Si ya agregaste algo mostramos confirmación con opciones, pero no redirigimos automáticamente */}
+                    <p style={styles.description}>{product.description}</p>
+
+                    <p style={styles.category}>
+                        Categoría: <b>{product.category ?? "—"}</b>
+                    </p>
+
                     {quantityAdded > 0 ? (
-                        <div style={{ display: 'flex', gap: '12px', marginTop: '18px', alignItems: 'center' }}>
-                            <div style={styles.addedBadge}>✔ Agregaste {quantityAdded}</div>
+                        <div style={styles.afterAddBox}>
+                            <div style={styles.addedBadge}>
+                                ✔ Agregaste {quantityAdded} al carrito
+                            </div>
 
                             <Link to="/cart" style={styles.goToCartButton}>
-                                Ir al Carrito
+                                Ir al carrito
                             </Link>
 
                             <button
@@ -101,102 +123,15 @@ const ItemDetailContainer = () => {
                             </button>
                         </div>
                     ) : (
-                        <ItemCount 
-                            maxStock={product.stock || product.available || 99} 
-                            onAdd={handleOnAdd} 
+                        <ItemCount
+                            maxStock={product.stock ?? 10}
+                            onAdd={handleOnAdd}
                         />
                     )}
                 </div>
             </div>
         </div>
     );
-};
-
-const styles = {
-    statusMessage: {
-        textAlign: 'center',
-        fontSize: '1.5em',
-        marginTop: '50px'
-    },
-    container: {
-        display: 'flex',
-        justifyContent: 'center',
-        padding: '40px',
-        backgroundColor: '#f9f9f9',
-        minHeight: '85vh'
-    },
-    detailCard: {
-        display: 'flex',
-        flexDirection: 'row',
-        backgroundColor: 'white',
-        borderRadius: '15px',
-        boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
-        maxWidth: '1000px',
-        width: '100%',
-        overflow: 'hidden',
-        gap: '30px',
-        padding: '30px'
-    },
-    image: {
-        width: '40%',
-        minWidth: '350px',
-        height: 'auto',
-        objectFit: 'cover',
-        borderRadius: '10px'
-    },
-    info: {
-        width: '60%',
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'flex-start'
-    },
-    title: {
-        fontSize: '3em',
-        color: '#282c34',
-        marginBottom: '10px'
-    },
-    price: {
-        fontSize: '2em',
-        fontWeight: 'bold',
-        color: '#4CAF50',
-        marginBottom: '20px'
-    },
-    description: {
-        fontSize: '1.1em',
-        color: '#555',
-        lineHeight: '1.6',
-        marginBottom: '30px'
-    },
-    category: {
-        fontSize: '1em',
-        color: '#777',
-        marginBottom: '30px'
-    },
-    goToCartButton: {
-        backgroundColor: '#f57c00',
-        color: 'white',
-        textDecoration: 'none',
-        padding: '10px 18px',
-        borderRadius: '8px',
-        fontSize: '1rem',
-        fontWeight: '700'
-    },
-    continueButton: {
-        background: 'transparent',
-        border: '2px solid #f57c00',
-        color: '#f57c00',
-        padding: '8px 14px',
-        borderRadius: '8px',
-        cursor: 'pointer',
-        fontWeight: '700'
-    },
-    addedBadge: {
-        background: '#e8f5e9',
-        color: '#2e7d32',
-        padding: '8px 12px',
-        borderRadius: '8px',
-        fontWeight: '700'
-    }
 };
 
 export default ItemDetailContainer;

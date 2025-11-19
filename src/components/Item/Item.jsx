@@ -1,4 +1,4 @@
-// src/containers/ItemListContainer/Item.jsx
+// src/components/Item/Item.jsx
 import { Link } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 
@@ -6,22 +6,36 @@ const Item = ({ product }) => {
     const { addToCart } = useCart();
 
     const handleAddToCart = () => {
-        const itemWithQuantity = { ...product, quantity: 1 };
-        addToCart(itemWithQuantity);
+        const safeItem = {
+            id: product.id,
+            name: product.name ?? product.title ?? "Producto sin nombre",
+            price: Number(product.price ?? 0),
+            image: product.image ?? product.img ?? "",
+            description: product.description ?? "",
+            category: product.category ?? "",
+            stock: Number(product.stock ?? 0),
+            quantity: 1
+        };
+
+        addToCart(safeItem);
     };
 
     return (
         <div style={styles.card}>
             <div style={styles.imageContainer}>
                 <img
-                    src={product.image || 'https://via.placeholder.com/250'}
-                    alt={product.name}
+                    src={product.image || product.img || 'https://via.placeholder.com/250'}
+                    alt={product.name || product.title}
                     style={styles.image}
+                    onError={(e) => {
+                        e.target.src = 'https://via.placeholder.com/250';
+                    }}
                 />
             </div>
 
             <div style={styles.info}>
                 <h3 style={styles.title}>{product.name}</h3>
+
                 <p style={styles.description}>
                     {product.description?.length > 80
                         ? product.description.slice(0, 80) + '...'
@@ -35,6 +49,7 @@ const Item = ({ product }) => {
                             currency: 'ARS',
                         }) || '$0'}
                     </span>
+
                     {product.discount && (
                         <span style={styles.discount}>-{product.discount}%</span>
                     )}
@@ -45,6 +60,7 @@ const Item = ({ product }) => {
                 <Link to={`/item/${product.id}`} style={styles.detailButton}>
                     Ver detalle
                 </Link>
+
                 <button onClick={handleAddToCart} style={styles.addButton}>
                     🛒 Agregar
                 </button>
@@ -144,22 +160,5 @@ const styles = {
         transition: 'background-color 0.2s ease',
     },
 };
-
-const hoverStyle = `
-.card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
-}
-button:hover, a:hover {
-    filter: brightness(1.1);
-}
-`;
-
-if (typeof document !== 'undefined' && !document.getElementById('item-hover-style')) {
-    const styleTag = document.createElement('style');
-    styleTag.id = 'item-hover-style';
-    styleTag.innerHTML = hoverStyle;
-    document.head.appendChild(styleTag);
-}
 
 export default Item;

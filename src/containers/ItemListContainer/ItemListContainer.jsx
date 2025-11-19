@@ -2,7 +2,9 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import ItemList from './ItemList.jsx';
-import { products as localProducts } from '../../data/products';
+
+import { db } from '../../api/firebaseConfig';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 
 const ItemListContainer = ({ greeting }) => {
     const [products, setProducts] = useState([]);
@@ -14,19 +16,37 @@ const ItemListContainer = ({ greeting }) => {
         setLoading(true);
         setError(null);
 
-        // Simula carga asincrónica
-        setTimeout(() => {
-            if (categoryId) {
-                const filtered = localProducts.filter(p => p.category === categoryId);
-                if (filtered.length === 0) {
+        const productsRef = collection(db, "products");
+        let q;
+
+        // Si hay categoría en la URL: filtrar
+        if (categoryId) {
+            q = query(productsRef, where("category", "==", categoryId));
+        } else {
+            q = query(productsRef);
+        }
+
+        getDocs(q)
+            .then(snapshot => {
+                const data = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+
+                if (data.length === 0) {
                     setError(`No hay productos en la categoría: ${categoryId}`);
                 }
-                setProducts(filtered);
-            } else {
-                setProducts(localProducts);
-            }
-            setLoading(false);
-        }, 800);
+
+                setProducts(data);
+            })
+            .catch(err => {
+                console.error("Error cargando productos:", err);
+                setError("Hubo un problema al cargar los productos.");
+            })
+            .finally(() => {
+                setLoading(false);
+            });
+
     }, [categoryId]);
 
     return (
@@ -39,6 +59,7 @@ const ItemListContainer = ({ greeting }) => {
             {error && <p style={{ ...styles.statusMessage, ...styles.error }}>⚠️ {error}</p>}
 
             {!loading && !error && products.length > 0 && <ItemList products={products} />}
+
             {!loading && !error && products.length === 0 && (
                 <p style={styles.statusMessage}>No hay productos disponibles en esta sección.</p>
             )}

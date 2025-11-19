@@ -3,14 +3,27 @@ import { useCart } from '../../context/CartContext';
 const CartItem = ({ product }) => {
     const { removeFromCart, increaseQuantity, decreaseQuantity } = useCart();
 
-    const subtotal = (Number(product.price) || 0) * (Number(product.quantity) || 0);
+    // 🚀 Sanitización completa
+    const safeProduct = {
+        id: product.id ?? "sin-id",
+        name: product.name ?? "Producto",
+        image: product.image ?? product.img ?? "",
+        description: product.description ?? "",
+        price: Number(product.price ?? 0),
+        quantity: Number(product.quantity ?? 1),
+    };
+
+    const subtotal = safeProduct.price * safeProduct.quantity;
 
     return (
-        <div style={styles.card}>
+        <div style={styles.card} className="cart-card">
             <div style={styles.info}>
                 <img
-                    src={product.img || product.image || 'https://placehold.co/100x100?text=No+Image'}
-                    alt={product.name}
+                    src={
+                        safeProduct.image ||
+                        'https://placehold.co/100x100?text=No+Image'
+                    }
+                    alt={safeProduct.name}
                     style={styles.image}
                     onError={(e) => {
                         e.target.onerror = null;
@@ -19,21 +32,21 @@ const CartItem = ({ product }) => {
                 />
 
                 <div style={styles.details}>
-                    <h3 style={styles.name}>{product.name}</h3>
+                    <h3 style={styles.name}>{safeProduct.name}</h3>
 
                     <p style={styles.desc}>
-                        {product.description?.length > 60
-                            ? product.description.slice(0, 60) + '...'
-                            : product.description || ''}
+                        {safeProduct.description.length > 60
+                            ? safeProduct.description.slice(0, 60) + '...'
+                            : safeProduct.description}
                     </p>
 
                     <p style={styles.price}>
                         Precio unitario:{' '}
                         <strong>
-                            {product.price?.toLocaleString('es-AR', {
+                            {safeProduct.price.toLocaleString('es-AR', {
                                 style: 'currency',
                                 currency: 'ARS',
-                            }) || '$0'}
+                            })}
                         </strong>
                     </p>
                 </div>
@@ -41,29 +54,47 @@ const CartItem = ({ product }) => {
 
             <div style={styles.actions}>
 
-                {/* BOTONES DE CANTIDAD */}
+                {/* Botones de cantidad */}
                 <div style={styles.quantityBox}>
-                    <button style={styles.qtyButton} onClick={() => decreaseQuantity(product.id)}>-</button>
-                    <span style={styles.qtyNumber}>{product.quantity}</span>
-                    <button style={styles.qtyButton} onClick={() => increaseQuantity(product.id)}>+</button>
+                    <button
+                        style={styles.qtyButton}
+                        onClick={() => decreaseQuantity(safeProduct.id)}
+                    >
+                        -
+                    </button>
+
+                    <span style={styles.qtyNumber}>
+                        {safeProduct.quantity}
+                    </span>
+
+                    <button
+                        style={styles.qtyButton}
+                        onClick={() => increaseQuantity(safeProduct.id)}
+                    >
+                        +
+                    </button>
                 </div>
 
-                {/* SUBTOTAL */}
+                {/* Subtotal */}
                 <span style={styles.subtotal}>
                     Subtotal:{' '}
                     <strong>
-                        {subtotal.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
+                        {subtotal.toLocaleString('es-AR', {
+                            style: 'currency',
+                            currency: 'ARS',
+                        })}
                     </strong>
                 </span>
 
-                {/* ELIMINAR */}
+                {/* Eliminar */}
                 <button
-                    onClick={() => removeFromCart(product.id)}
+                    onClick={() => removeFromCart(safeProduct.id)}
                     style={styles.removeButton}
                     title="Eliminar producto"
                 >
                     ✖ Eliminar
                 </button>
+
             </div>
         </div>
     );
@@ -78,7 +109,6 @@ const styles = {
         boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
         padding: '15px 20px',
         marginBottom: '15px',
-        transition: 'transform 0.2s ease, box-shadow 0.2s ease',
     },
     info: {
         display: 'flex',
@@ -97,8 +127,6 @@ const styles = {
     name: {
         fontSize: '1.1rem',
         fontWeight: '600',
-        color: '#222',
-        marginBottom: '5px',
     },
     desc: {
         fontSize: '0.9rem',
@@ -107,7 +135,6 @@ const styles = {
     },
     price: {
         fontSize: '0.95rem',
-        color: '#333',
     },
     actions: {
         display: 'flex',
@@ -116,11 +143,9 @@ const styles = {
         marginTop: '12px',
         paddingTop: '10px',
         borderTop: '1px solid #eee',
-        flexWrap: 'wrap',
         gap: '15px',
+        flexWrap: 'wrap',
     },
-
-    /* NUEVOS ESTILOS DE CANTIDAD */
     quantityBox: {
         display: 'flex',
         alignItems: 'center',
@@ -133,16 +158,12 @@ const styles = {
         border: 'none',
         padding: '6px 12px',
         cursor: 'pointer',
-        fontSize: '1rem',
-        fontWeight: 'bold',
     },
     qtyNumber: {
         padding: '6px 15px',
         fontSize: '1rem',
         fontWeight: '600',
-        background: '#fff',
     },
-
     subtotal: {
         fontSize: '1rem',
         color: '#2e7d32',
@@ -152,15 +173,13 @@ const styles = {
         backgroundColor: '#e53935',
         color: 'white',
         border: 'none',
-        borderRadius: '8px',
         padding: '8px 12px',
-        fontSize: '0.9rem',
+        borderRadius: '8px',
         cursor: 'pointer',
-        transition: 'background-color 0.2s ease',
     },
 };
 
-/* Hover global */
+/* Hover */
 const hoverStyle = `
 .cart-card:hover {
   transform: translateY(-3px);
@@ -179,3 +198,4 @@ if (typeof document !== 'undefined' && !document.getElementById('cart-hover-styl
 }
 
 export default CartItem;
+

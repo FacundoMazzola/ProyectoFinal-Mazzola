@@ -1,13 +1,21 @@
-import { useState } from 'react';
+// src/containers/CartView/CartView.jsx
+
 import { useCart } from '../../context/CartContext';
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../api/firebaseConfig';
 import CartItem from './CartItem';
 
 const CartView = () => {
     const { cart, totalPrice, clearCart } = useCart();
-    const [buyerData, setBuyerData] = useState({ name: '', phone: '', email: '' });
+
+    const [buyerData, setBuyerData] = useState({
+        name: "",
+        phone: "",
+        email: "",
+    });
+
     const [orderId, setOrderId] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -22,7 +30,7 @@ const CartView = () => {
         setError(null);
 
         if (!buyerData.name || !buyerData.phone || !buyerData.email) {
-            setError("Por favor, completá todos los campos del formulario.");
+            setError("Por favor completá todos los campos del formulario.");
             setLoading(false);
             return;
         }
@@ -33,36 +41,45 @@ const CartView = () => {
             return;
         }
 
+        // 🚀 SANITIZACIÓN COMPLETA – evita undefined en Firebase
         const sanitizedItems = cart.map(item => ({
-            id: item.id || "sin-id",
-            name: item.name || "Producto sin nombre",
-            price: Number(item.price) || 0,
-            quantity: Number(item.quantity) || 1
+            id: item.id ?? "sin-id",
+            name: item.name ?? "Producto sin nombre",
+            price: Number(item.price ?? 0),
+            quantity: Number(item.quantity ?? 1),
+            img: item.img ?? "",
+            description: item.description ?? "",
+            category: item.category ?? "",
+            stock: Number(item.stock ?? 0),
         }));
 
-        const newOrder = {
+        const order = {
             buyer: {
-                name: buyerData.name.trim(),
-                phone: buyerData.phone.trim(),
-                email: buyerData.email.trim(),
+                name: buyerData.name?.trim() ?? "",
+                phone: buyerData.phone?.trim() ?? "",
+                email: buyerData.email?.trim() ?? "",
             },
             items: sanitizedItems,
-            total: Number(totalPrice) || 0,
+            total: Number(totalPrice ?? 0),
             date: serverTimestamp(),
         };
 
         try {
-            const ordersRef = collection(db, 'orders');
-            const docRef = await addDoc(ordersRef, newOrder);
-            setOrderId(docRef.id);
+            const ordersRef = collection(db, "orders");
+            const res = await addDoc(ordersRef, order);
+            setOrderId(res.id);
             clearCart();
         } catch (err) {
             console.error("Error al generar la orden:", err);
-            setError("Hubo un error al generar la orden. Intentalo nuevamente.");
+            setError("Hubo un error generando la orden. Intentá nuevamente.");
         } finally {
             setLoading(false);
         }
     };
+
+    // -------------------------
+    // VIEWS
+    // -------------------------
 
     if (cart.length === 0 && !orderId) {
         return (
@@ -76,7 +93,7 @@ const CartView = () => {
     if (orderId) {
         return (
             <div style={styles.successContainer}>
-                <h1 style={styles.successTitle}>🎉 ¡Compra finalizada!</h1>
+                <h1 style={styles.successTitle}>🎉 ¡Compra realizada!</h1>
                 <p style={styles.successText}>Gracias por tu compra, {buyerData.name || "cliente"}.</p>
                 <p>ID de tu orden:</p>
                 <h3 style={styles.orderId}>{orderId}</h3>
@@ -87,8 +104,10 @@ const CartView = () => {
 
     return (
         <div style={styles.container}>
+            {/* LISTA DEL CARRITO */}
             <div style={styles.cartSection}>
                 <h1 style={styles.title}>🛒 Tu carrito</h1>
+
                 <div style={styles.items}>
                     {cart.map(product => (
                         <CartItem key={product.id} product={product} />
@@ -98,7 +117,10 @@ const CartView = () => {
                 <div style={styles.totalRow}>
                     <span>Total Final:</span>
                     <strong style={styles.totalPrice}>
-                        {totalPrice.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' })}
+                        {Number(totalPrice).toLocaleString("es-AR", {
+                            style: "currency",
+                            currency: "ARS",
+                        })}
                     </strong>
                 </div>
 
@@ -107,19 +129,45 @@ const CartView = () => {
                 </button>
             </div>
 
+            {/* FORMULARIO DE COMPRA */}
             <div style={styles.checkoutSection}>
                 <h2 style={styles.subtitle}>Datos del comprador</h2>
+
                 <form onSubmit={handleSubmit}>
-                    <input type="text" name="name" placeholder="Nombre y Apellido"
-                        value={buyerData.name} onChange={handleChange} style={styles.input} />
-                    <input type="tel" name="phone" placeholder="Teléfono"
-                        value={buyerData.phone} onChange={handleChange} style={styles.input} />
-                    <input type="email" name="email" placeholder="Correo electrónico"
-                        value={buyerData.email} onChange={handleChange} style={styles.input} />
+                    <input
+                        type="text"
+                        name="name"
+                        placeholder="Nombre y Apellido"
+                        value={buyerData.name}
+                        onChange={handleChange}
+                        style={styles.input}
+                    />
+
+                    <input
+                        type="tel"
+                        name="phone"
+                        placeholder="Teléfono"
+                        value={buyerData.phone}
+                        onChange={handleChange}
+                        style={styles.input}
+                    />
+
+                    <input
+                        type="email"
+                        name="email"
+                        placeholder="Correo electrónico"
+                        value={buyerData.email}
+                        onChange={handleChange}
+                        style={styles.input}
+                    />
 
                     {error && <p style={styles.error}>{error}</p>}
 
-                    <button type="submit" style={styles.primaryButton} disabled={loading}>
+                    <button
+                        type="submit"
+                        style={styles.primaryButton}
+                        disabled={loading}
+                    >
                         {loading ? "Procesando..." : "Finalizar compra"}
                     </button>
                 </form>
@@ -128,121 +176,105 @@ const CartView = () => {
     );
 };
 
+// ----------------------
+// ESTILOS
+// ----------------------
 const styles = {
     container: {
-        display: 'flex',
-        flexWrap: 'wrap',
-        justifyContent: 'center',
-        alignItems: 'flex-start',
-        gap: '40px',
-        backgroundColor: '#f5f7fa',
-        padding: '50px 20px',
-        minHeight: '100vh',
+        display: "flex",
+        flexWrap: "wrap",
+        justifyContent: "center",
+        gap: "40px",
+        padding: "50px 20px",
+        backgroundColor: "#f5f7fa",
     },
     cartSection: {
-        backgroundColor: '#fff',
-        padding: '30px',
-        borderRadius: '16px',
-        boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
-        width: '650px',
-        maxWidth: '100%',
+        backgroundColor: "#fff",
+        padding: "30px",
+        borderRadius: "16px",
+        width: "650px",
+        boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
     },
     checkoutSection: {
-        backgroundColor: '#fff',
-        padding: '30px',
-        borderRadius: '16px',
-        boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
-        width: '350px',
-        maxWidth: '100%',
+        backgroundColor: "#fff",
+        padding: "30px",
+        borderRadius: "16px",
+        width: "350px",
+        boxShadow: "0 4px 10px rgba(0,0,0,0.1)",
     },
     title: {
-        fontSize: '2rem',
-        color: '#222',
-        marginBottom: '25px',
-        borderBottom: '2px solid #eee',
-        paddingBottom: '10px',
+        fontSize: "2rem",
+        marginBottom: "20px",
+        borderBottom: "2px solid #eee",
+        paddingBottom: "10px",
     },
     subtitle: {
-        fontSize: '1.3rem',
-        marginBottom: '20px',
-        color: '#333',
+        fontSize: "1.3rem",
+        marginBottom: "20px",
     },
+    items: {},
     totalRow: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        fontSize: '1.4rem',
-        fontWeight: 'bold',
-        marginTop: '25px',
-        borderTop: '2px dashed #ddd',
-        paddingTop: '15px',
+        display: "flex",
+        justifyContent: "space-between",
+        marginTop: "20px",
+        fontSize: "1.3rem",
     },
     totalPrice: {
-        color: '#2e7d32',
+        color: "#2e7d32",
+        fontWeight: "bold",
     },
     input: {
-        width: '100%',
-        padding: '12px 14px',
-        border: '1px solid #ccc',
-        borderRadius: '8px',
-        marginBottom: '10px',
-        fontSize: '1rem',
+        width: "100%",
+        padding: "12px",
+        marginBottom: "12px",
+        border: "1px solid #ccc",
+        borderRadius: "8px",
     },
     primaryButton: {
-        backgroundColor: '#4CAF50',
-        color: 'white',
-        border: 'none',
-        padding: '12px 20px',
-        borderRadius: '8px',
-        fontSize: '1rem',
-        cursor: 'pointer',
-        width: '100%',
-        marginTop: '10px',
-        textDecoration: 'none',
-        textAlign: 'center',
-        display: 'inline-block',
+        backgroundColor: "#4CAF50",
+        color: "#fff",
+        padding: "12px 20px",
+        width: "100%",
+        borderRadius: "8px",
+        display: "inline-block",
+        textAlign: "center",
+        textDecoration: "none",
+        border: "none",
+        cursor: "pointer",
+        marginTop: "10px",
     },
     dangerButton: {
-        backgroundColor: '#e53935',
-        color: 'white',
-        border: 'none',
-        padding: '12px 20px',
-        borderRadius: '8px',
-        fontSize: '1rem',
-        cursor: 'pointer',
-        width: '100%',
-        marginTop: '20px',
-    },
-    error: {
-        color: '#e53935',
-        marginBottom: '10px',
+        backgroundColor: "#e53935",
+        color: "#fff",
+        width: "100%",
+        padding: "12px",
+        border: "none",
+        borderRadius: "8px",
+        cursor: "pointer",
+        marginTop: "20px",
     },
     emptyCart: {
-        textAlign: 'center',
-        padding: '100px 20px',
-        backgroundColor: '#f5f7fa',
-        minHeight: '100vh',
+        textAlign: "center",
+        padding: "80px 20px",
     },
     successContainer: {
-        textAlign: 'center',
-        padding: '80px 20px',
-        backgroundColor: '#e8f5e9',
-        borderRadius: '16px',
-        margin: '60px auto',
-        width: '500px',
-        boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+        textAlign: "center",
+        padding: "80px 20px",
     },
     successTitle: {
-        fontSize: '2rem',
-        color: '#2e7d32',
-        marginBottom: '15px',
+        fontSize: "2rem",
+        color: "#2e7d32",
     },
     successText: {
-        fontSize: '1.1rem',
-        color: '#333',
-        marginBottom: '20px',
+        fontSize: "1.1rem",
     },
     orderId: {
-        color: '#ff9800',
+        fontSize: "1.3rem",
+        color: "#ff9800",
+        margin: "10px 0",
+    },
+    error: {
+        color: "#e53935",
     },
 };
 

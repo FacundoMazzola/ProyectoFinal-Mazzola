@@ -1,5 +1,6 @@
 // src/containers/ItemListContainer/ItemList.jsx
-import Item from "../../components/Item/item.jsx";
+import Item from "../../components/Item/Item.jsx";
+
 const ItemList = ({ products }) => {
 
     return (
@@ -20,3 +21,5 @@ const styles = {
 };
 
 export default ItemList;
+
+

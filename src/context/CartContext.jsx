@@ -6,25 +6,38 @@ export const CartContext = createContext();
 export const CartProvider = ({ children }) => {
     const [cart, setCart] = useState([]);
 
-    // Agrega item (item debe traer { id, name, price, quantity, ... })
-    const addToCart = (item) => {
+    
+    const sanitizeProduct = (item) => ({
+        id: item.id ?? `no-id`,
+        name: item.name ?? "Producto",
+        price: Number(item.price ?? 0),
+        image: item.image ?? item.img ?? "",
+        description: item.description ?? "",
+        category: item.category ?? "",
+        stock: Number(item.stock ?? 0),
+        quantity: Number(item.quantity ?? 1),
+    });
+
+    const addToCart = (rawItem) => {
+        const item = sanitizeProduct(rawItem);
+
         setCart((prevCart) => {
-            const existing = prevCart.find(p => p.id === item.id);
+            const existing = prevCart.find((p) => p.id === item.id);
 
             if (existing) {
-                return prevCart.map(p =>
+                return prevCart.map((p) =>
                     p.id === item.id
-                        ? { ...p, quantity: p.quantity + (item.quantity || 1) }
+                        ? { ...p, quantity: p.quantity + item.quantity }
                         : p
                 );
             }
 
-            return [...prevCart, { ...item, quantity: item.quantity || 1 }];
+            return [...prevCart, item];
         });
     };
 
     const removeFromCart = (id) => {
-        setCart((prev) => prev.filter(p => p.id !== id));
+        setCart((prev) => prev.filter((p) => p.id !== id));
     };
 
     const clearCart = () => setCart([]);
@@ -33,7 +46,7 @@ export const CartProvider = ({ children }) => {
         setCart((prevCart) =>
             prevCart.map((item) =>
                 item.id === id
-                    ? { ...item, quantity: (item.quantity || 1) + 1 }
+                    ? { ...item, quantity: item.quantity + 1 }
                     : item
             )
         );
@@ -43,7 +56,7 @@ export const CartProvider = ({ children }) => {
         setCart((prevCart) =>
             prevCart.map((item) =>
                 item.id === id
-                    ? { ...item, quantity: Math.max((item.quantity || 1) - 1, 1) }
+                    ? { ...item, quantity: Math.max(item.quantity - 1, 1) }
                     : item
             )
         );
@@ -51,21 +64,21 @@ export const CartProvider = ({ children }) => {
 
     const totalPrice = useMemo(() => {
         return cart.reduce(
-            (acc, item) => acc + (Number(item.price) || 0) * (Number(item.quantity) || 0),
+            (acc, item) => acc + item.price * item.quantity,
             0
         );
     }, [cart]);
 
     return (
-        <CartContext.Provider 
-            value={{ 
+        <CartContext.Provider
+            value={{
                 cart,
                 addToCart,
                 removeFromCart,
                 clearCart,
                 increaseQuantity,
                 decreaseQuantity,
-                totalPrice
+                totalPrice,
             }}
         >
             {children}
@@ -75,7 +88,8 @@ export const CartProvider = ({ children }) => {
 
 export const useCart = () => {
     const context = useContext(CartContext);
-    if (!context) throw new Error("useCart debe usarse dentro de un CartProvider");
+    if (!context)
+        throw new Error("useCart debe usarse dentro de un CartProvider");
     return context;
 };
 
